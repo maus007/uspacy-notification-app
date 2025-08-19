@@ -2,8 +2,8 @@ name: Build & Release Uspacy Notifier (Unsigned)
 
 on:
   push:
-    tags:
-      - "*"
+#    tags:
+#      - "*"
 
 jobs:
   build:
