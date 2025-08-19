@@ -1,0 +1,87 @@
+name: Build Uspacy Notifier
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ "*" ]
+  pull_request:
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ windows-latest, macos-latest ]
+        python-version: [ "3.11" ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~\AppData\Local\pip\Cache
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies (from requirements.txt if present)
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f "requirements.txt" ]; then
+            pip install -r requirements.txt
+          else
+            pip install pyinstaller PySide6 websocket-client requests
+          fi
+
+      - name: Build (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          # Роздільник add-data для Windows — ';'
+          pyinstaller --noconfirm --clean `
+            --name UspacyNotifier `
+            --onefile --windowed `
+            --collect-all PySide6 --collect-plugins PySide6 `
+            --collect-submodules websocket `
+            --add-data "icon.png;." `
+            --add-data "sounds/1.wav;sounds" `
+            main.py
+          Get-ChildItem -Recurse dist
+
+      - name: Build (macOS)
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          set -e
+          # Роздільник add-data для macOS — ':'
+          pyinstaller --noconfirm --clean \
+            --name UspacyNotifier \
+            --onefile --windowed \
+            --collect-all PySide6 --collect-plugins PySide6 \
+            --collect-submodules websocket \
+            --add-data "icon.png:." \
+            --add-data "sounds/1.wav:sounds" \
+            main.py
+          find dist -maxdepth 2 -type f -print
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+            name: UspacyNotifier-${{ matrix.os }}
+            path: |
+              dist/UspacyNotifier.exe
+              dist/UspacyNotifier
+            if-no-files-found: warn
