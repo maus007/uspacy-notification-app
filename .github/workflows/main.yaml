@@ -2,8 +2,8 @@ name: Build & Release Uspacy Notifier
 
 on:
   push:
-    tags:
-      - "*"
+#    tags:
+#      - "*"
 
 jobs:
   build:
@@ -52,7 +52,7 @@ jobs:
           pyinstaller --noconfirm --clean `
             --name UspacyNotifier `
             --onefile --windowed `
-            --collect-all PySide6 --collect-plugins PySide6 `
+            --collect-all PySide6 `
             --collect-submodules websocket `
             --add-data "icon.png;." `
             --add-data "sounds/1.wav;sounds" `
@@ -67,7 +67,7 @@ jobs:
           pyinstaller --noconfirm --clean \
             --name UspacyNotifier \
             --onefile --windowed \
-            --collect-all PySide6 --collect-plugins PySide6 \
+            --collect-all PySide6 \
             --collect-submodules websocket \
             --add-data "icon.png:." \
             --add-data "sounds/1.wav:sounds" \
