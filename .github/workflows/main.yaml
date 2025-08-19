@@ -92,7 +92,7 @@ jobs:
         shell: bash
         run: |
           set -e
-          # Повністю чистимо попередні артефакти, щоб уникнути колізій симлінків/фреймворків
+          # Чистимо попередні артефакти (уникаємо конфліктів симлінків/фреймворків)
           rm -rf build dist UspacyNotifier.spec
           # Збірка .app без підпису; явно імпортуємо потрібні PySide6-модулі і вимикаємо Qt3D
           pyinstaller --noconfirm --clean \
@@ -114,6 +114,11 @@ jobs:
             --add-data "icon.png:." \
             --add-data "sounds/1.wav:sounds" \
             main.py
+
+          # Робимо застосунок agent'ом (бекграунд без іконки в Dock)
+          /usr/libexec/PlistBuddy -c "Add :LSUIElement bool true" "dist/UspacyNotifier.app/Contents/Info.plist" 2>/dev/null || \
+          /usr/libexec/PlistBuddy -c "Set :LSUIElement true" "dist/UspacyNotifier.app/Contents/Info.plist"
+
           # Пакуємо .app у zip для релізу
           ditto -c -k --sequesterRsrc --keepParent "dist/UspacyNotifier.app" "dist/UspacyNotifier-${{ github.ref_name }}-macos.zip"
           ls -lah dist
