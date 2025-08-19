@@ -2,8 +2,8 @@ name: Build & Release Uspacy Notifier (Unsigned)
 
 on:
   push:
-#    tags:
-#      - "*"
+    tags:
+      - "*"
 
 jobs:
   build:
@@ -92,13 +92,17 @@ jobs:
         shell: bash
         run: |
           set -e
-          # Прибираємо попередні залишки (уникнути дублікатів/symlink-колізій)
+          # Повністю чистимо попередні артефакти, щоб уникнути колізій симлінків/фреймворків
           rm -rf build dist UspacyNotifier.spec
-          # Збірка .app без підпису. Уникаємо Qt3D-модулів, що провокують FileExistsError на macOS.
+          # Збірка .app без підпису; явно імпортуємо потрібні PySide6-модулі і вимикаємо Qt3D
           pyinstaller --noconfirm --clean \
             --name UspacyNotifier \
             --windowed \
-            --collect-all PySide6 \
+            --hidden-import PySide6 \
+            --hidden-import PySide6.QtCore \
+            --hidden-import PySide6.QtGui \
+            --hidden-import PySide6.QtWidgets \
+            --hidden-import PySide6.QtMultimedia \
             --collect-submodules websocket \
             --exclude-module PySide6.Qt3DAnimation \
             --exclude-module PySide6.Qt3DCore \
@@ -149,4 +153,4 @@ jobs:
             collected-artifacts/**/UspacyNotifier-*
             collected-artifacts/**/UspacyNotifier.app
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
