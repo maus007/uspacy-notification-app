@@ -50,13 +50,9 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          python - << 'PY'
-          from PIL import Image
-          img = Image.open("icon.png").convert("RGBA")
-          sizes = [(16,16),(24,24),(32,32),(48,48),(64,64),(128,128),(256,256)]
-          img.save("dist-icons/app.ico", sizes=sizes)
-          PY
-          Get-ChildItem dist-icons -ErrorAction SilentlyContinue | Out-Null
+          New-Item -ItemType Directory -Force -Path dist-icons | Out-Null
+          python -c "from PIL import Image; img=Image.open('icon.png').convert('RGBA'); sizes=[(16,16),(24,24),(32,32),(48,48),(64,64),(128,128),(256,256)]; img.save('dist-icons/app.ico', sizes=sizes)"
+          Get-ChildItem dist-icons
 
       # ---------- ICONS: macOS (.icns) ----------
       - name: Make macOS .icns from icon.png
@@ -65,7 +61,6 @@ jobs:
         run: |
           set -e
           mkdir -p dist-icons icon.iconset
-          # Генеруємо потрібні розміри з PNG (sips є в macOS)
           for s in 16 32 64 128 256 512; do
             s2=$((s*2))
             sips -z $s $s icon.png --out icon.iconset/icon_${s}x${s}.png >/dev/null
@@ -97,17 +92,25 @@ jobs:
         shell: bash
         run: |
           set -e
-          # Збираємо .app без підпису (Gatekeeper попереджатиме, але можна відкрити через Open)
+          # Прибираємо попередні залишки (уникнути дублікатів/symlink-колізій)
+          rm -rf build dist UspacyNotifier.spec
+          # Збірка .app без підпису. Уникаємо Qt3D-модулів, що провокують FileExistsError на macOS.
           pyinstaller --noconfirm --clean \
             --name UspacyNotifier \
             --windowed \
             --collect-all PySide6 \
             --collect-submodules websocket \
+            --exclude-module PySide6.Qt3DAnimation \
+            --exclude-module PySide6.Qt3DCore \
+            --exclude-module PySide6.Qt3DExtras \
+            --exclude-module PySide6.Qt3DInput \
+            --exclude-module PySide6.Qt3DLogic \
+            --exclude-module PySide6.Qt3DRender \
             --icon dist-icons/app.icns \
             --add-data "icon.png:." \
             --add-data "sounds/1.wav:sounds" \
             main.py
-          # Пакуємо .app у zip (зручно для релізу)
+          # Пакуємо .app у zip для релізу
           ditto -c -k --sequesterRsrc --keepParent "dist/UspacyNotifier.app" "dist/UspacyNotifier-${{ github.ref_name }}-macos.zip"
           ls -lah dist
 
