@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from typing import Deque, List, Tuple, Optional
 from collections import deque
 from html import unescape
+import sys
+import os
 
 from PySide6 import QtWidgets, QtGui, QtCore, QtMultimedia
 
@@ -623,7 +625,7 @@ class TrayNotifierApp(QtWidgets.QApplication):
         self._sound = QtMultimedia.QSoundEffect()
         self._sound.setVolume(0.25)
         try:
-            self._sound.setSource(QtCore.QUrl.fromLocalFile("sounds/1.wav"))
+            self._sound.setSource(QtCore.QUrl.fromLocalFile(os.path.join(getattr(sys, "_MEIPASS", ""), "sounds", "1.wav")) if getattr(sys, "_MEIPASS", None) else QtCore.QUrl.fromLocalFile(str(Path("sounds") / "1.wav")))
         except Exception:
             pass
 
@@ -657,7 +659,8 @@ class TrayNotifierApp(QtWidgets.QApplication):
         QtCore.QTimer.singleShot(1500, lambda: self._show_tray_toast("Вітаємо", "Застосунок працює в системному треї.", 4000))
 
     def _load_app_icon(self) -> QtGui.QIcon:
-        pm = QtGui.QPixmap("icon.png")
+        icon_path = os.path.join(getattr(sys, "_MEIPASS", ""), "icon.png") if getattr(sys, "_MEIPASS", None) else "icon.png"
+        pm = QtGui.QPixmap(icon_path)
         if pm.isNull():
             size = getattr(self, "_TRAY_BASE_SIZE", 128)
             pm = QtGui.QPixmap(size, size)
