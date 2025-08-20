@@ -115,12 +115,14 @@ jobs:
             --add-data "sounds/1.wav:sounds" \
             main.py
 
-      # Видаляємо атрибут карантину, щоб застосунок міг відкриватися
-      - name: Remove quarantine attribute
+      - name: Update Info.plist for compatibility
         if: matrix.os == 'macos-latest'
         shell: bash
         run: |
-          xattr -c -r "dist/UspacyNotifier.app"
+          set -e
+          PLIST_FILE="dist/UspacyNotifier.app/Contents/Info.plist"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleSignature string '????'" "${PLIST_FILE}"
+          /usr/libexec/PlistBuddy -c "Add :LSRequiresIPhoneOS bool false" "${PLIST_FILE}"
 
       - name: Configure and Package (macOS .app)
         if: matrix.os == 'macos-latest'
