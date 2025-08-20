@@ -92,9 +92,9 @@ jobs:
         shell: bash
         run: |
           set -e
-          # Чистимо попередні артефакти (уникаємо конфліктів симлінків/фреймворків)
+          # Clean previous artifacts to avoid symlink/framework conflicts
           rm -rf build dist UspacyNotifier.spec
-          # Збірка .app без підпису; явно імпортуємо потрібні PySide6-модулі і вимикаємо Qt3D
+          # Build .app without a signature
           pyinstaller --noconfirm --clean \
             --name UspacyNotifier \
             --windowed \
@@ -115,25 +115,25 @@ jobs:
             --add-data "sounds/1.wav:sounds" \
             main.py
 
-      - name: Update Info.plist for compatibility
+      - name: Ad-hoc code sign and remove quarantine attributes
         if: matrix.os == 'macos-latest'
         shell: bash
         run: |
           set -e
-          PLIST_FILE="dist/UspacyNotifier.app/Contents/Info.plist"
-          /usr/libexec/PlistBuddy -c "Add :CFBundleSignature string '????'" "${PLIST_FILE}"
-          /usr/libexec/PlistBuddy -c "Add :LSRequiresIPhoneOS bool false" "${PLIST_FILE}"
+          # Ad-hoc sign the application to make it verifiable by macOS
+          codesign --force --sign - dist/UspacyNotifier.app
+          # Remove quarantine attributes to avoid the "cannot verify" error
+          xattr -cr dist/UspacyNotifier.app
 
       - name: Configure and Package (macOS .app)
         if: matrix.os == 'macos-latest'
         shell: bash
         run: |
           set -e
-          # Робимо застосунок agent'ом (бекграунд без іконки в Dock)
+          # Make the app a background agent (no icon in Dock)
           /usr/libexec/PlistBuddy -c "Add :LSUIElement bool true" "dist/UspacyNotifier.app/Contents/Info.plist" 2>/dev/null || \
           /usr/libexec/PlistBuddy -c "Set :LSUIElement true" "dist/UspacyNotifier.app/Contents/Info.plist"
-
-          # Пакуємо .app у zip для релізу
+          # Pack the .app into a zip for release
           ditto -c -k --sequesterRsrc --keepParent "dist/UspacyNotifier.app" "dist/UspacyNotifier-${{ github.ref_name }}-macos.zip"
           ls -lah dist
 
