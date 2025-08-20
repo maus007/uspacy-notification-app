@@ -115,6 +115,18 @@ jobs:
             --add-data "sounds/1.wav:sounds" \
             main.py
 
+      # Видаляємо атрибут карантину, щоб застосунок міг відкриватися
+      - name: Remove quarantine attribute
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          xattr -c -r "dist/UspacyNotifier.app"
+
+      - name: Configure and Package (macOS .app)
+        if: matrix.os == 'macos-latest'
+        shell: bash
+        run: |
+          set -e
           # Робимо застосунок agent'ом (бекграунд без іконки в Dock)
           /usr/libexec/PlistBuddy -c "Add :LSUIElement bool true" "dist/UspacyNotifier.app/Contents/Info.plist" 2>/dev/null || \
           /usr/libexec/PlistBuddy -c "Set :LSUIElement true" "dist/UspacyNotifier.app/Contents/Info.plist"
